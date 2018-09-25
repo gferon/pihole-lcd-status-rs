@@ -1,0 +1,7 @@
+[package]
+name = "rustyhole"
+version = "0.1.0"
+authors = ["Gabriel Feron <feron.gabriel@gmail.com>"]
+
+[dependencies]
+rppal = "*"
