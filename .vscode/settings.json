@@ -1,3 +1,4 @@
 {
-    "rust-client.channel": "stable"
+    "rust-client.channel": "stable",
+    "editor.formatOnSave": true
 }
