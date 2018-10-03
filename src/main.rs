@@ -1,5 +1,6 @@
 use adafruit::errors::CommunicationError;
 use std::char;
+use std::sync::Arc;
 use serde_derive::Deserialize;
 use ureq;
 
@@ -60,7 +61,11 @@ fn display_status(display: &mut adafruit::AdafruitDisplay) -> Result<(), PiHoleE
 }
 
 fn main() -> Result<(), PiHoleError> {
-    let mut display = adafruit::AdafruitDisplay::for_backplate()?;
+    let mut display = Arc::new(adafruit::AdafruitDisplay::for_backplate()?);
+    let d = display.clone();
+    ctrlc::set_handler(move || {
+        d.set_backlight(0);
+    }).expect("Error setting Ctrl-C handler");
     loop {
         display_ferris(&mut display)?;
         std::thread::sleep(std::time::Duration::from_secs(4));
