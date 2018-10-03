@@ -171,7 +171,7 @@ impl AdafruitDisplay {
         // Setup backlight pins
         if display.backlight {
             display.gpio.setup(LCD_BACKPACK_LITE, Mode::Output)?;
-            display.gpio.output(LCD_BACKPACK_LITE, display.blpol)?;
+            display.set_backlight(1);
 
             display.gpio.setup(LCD_PLATE_RED, Mode::Output)?;
             display.gpio.setup(LCD_PLATE_GREEN, Mode::Output)?;
@@ -223,12 +223,22 @@ impl AdafruitDisplay {
         Ok(())
     }
 
+    /// Enable or disable the backlight. If PWM is not enabled (default)
+    /// non-zero backlight value will turn on the backlight and a zero value
+    /// will turn it off.
+    pub fn set_backlight(&mut self, backlight: u8) -> Result<(), CommunicationError> {
+        // TODO: implement PWM
+        self.gpio.output(LCD_BACKPACK_LITE, self.blpol)
+    }
+
+    /// Move the cursor back to its start point (upper-left corner).
     pub fn home(&mut self) -> Result<(), CommunicationError> {
         self.write8(LCD_RETURNHOME, false)?;
         helpers::delay_microseconds(3000);
         Ok(())
     }
 
+    /// Enables auto-scroll when lines are too long.
     pub fn autoscroll(&mut self, autoscroll: bool) -> Result<(), CommunicationError> {
         if autoscroll {
             self.displaymode |= LCD_ENTRYSHIFTINCREMENT;
@@ -239,6 +249,7 @@ impl AdafruitDisplay {
         self.write8(displaymode, false)
     }
 
+    /// Enables cursor blinking, a-la MS-DOS
     pub fn blink(&mut self, blink: bool) -> Result<(), CommunicationError> {
         if blink {
             self.displaycontrol |= LCD_BLINKON;
@@ -311,5 +322,12 @@ impl AdafruitDisplay {
         self.write8(LCD_CLEARDISPLAY, false)?;
         helpers::delay_microseconds(3000); // 3000 microsecond sleep, clearing the display takes a long time
         Ok(())
+    }
+}
+
+impl Drop for AdafruitDisplay {
+    fn drop(&mut self) {
+        self.set_backlight(0);
+        println!("DROPPING");
     }
 }

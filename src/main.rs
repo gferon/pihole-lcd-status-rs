@@ -3,9 +3,8 @@ use std::char;
 use serde_derive::Deserialize;
 use ureq;
 
-fn initialize_display() -> Result<adafruit::AdafruitDisplay, CommunicationError> {
-    let mut display = adafruit::AdafruitDisplay::for_backplate()?;
-    adafruit::helpers::load_ferris(&mut display)?;
+fn display_ferris(display: &mut adafruit::AdafruitDisplay) -> Result<(), CommunicationError> {
+    adafruit::helpers::load_ferris(display)?;
 
     display.clear()?;
     display.home()?;
@@ -27,7 +26,7 @@ fn initialize_display() -> Result<adafruit::AdafruitDisplay, CommunicationError>
         char::from_u32(7).unwrap()
     ))?;
 
-    Ok(display)
+    Ok(())
 }
 
 fn get_pihole_status() -> Result<PiHoleStatus, PiHoleError> {
@@ -39,8 +38,9 @@ fn get_pihole_status() -> Result<PiHoleStatus, PiHoleError> {
     Ok(status)
 }
 
-fn display_status(mut display: adafruit::AdafruitDisplay) -> Result<(), PiHoleError> {
+fn display_status(display: &mut adafruit::AdafruitDisplay) -> Result<(), PiHoleError> {
     let status: PiHoleStatus = get_pihole_status()?;
+    std::thread::sleep(std::time::Duration::from_secs(10));
 
     display.clear()?;
     display.message(&format!(
@@ -56,14 +56,15 @@ fn display_status(mut display: adafruit::AdafruitDisplay) -> Result<(), PiHoleEr
         status.ads_blocked_today, status.ads_percentage_today,
     ))?;
 
-    std::thread::sleep(std::time::Duration::from_secs(10));
-
     Ok(())
 }
 
 fn main() -> Result<(), PiHoleError> {
+    let mut display = adafruit::AdafruitDisplay::for_backplate()?;
     loop {
-        display_status(initialize_display()?)?;
+        display_ferris(&mut display)?;
+        std::thread::sleep(std::time::Duration::from_secs(4));
+        display_status(&mut display)?;
     }
 }
 
