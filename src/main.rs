@@ -1,6 +1,6 @@
 use adafruit::errors::CommunicationError;
 use std::char;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use serde_derive::Deserialize;
 use ureq;
 
@@ -61,15 +61,30 @@ fn display_status(display: &mut adafruit::AdafruitDisplay) -> Result<(), PiHoleE
 }
 
 fn main() -> Result<(), PiHoleError> {
-    let mut display = Arc::new(adafruit::AdafruitDisplay::for_backplate()?);
+    let display = Arc::new(Mutex::new(adafruit::AdafruitDisplay::for_backplate()?));
     let d = display.clone();
     ctrlc::set_handler(move || {
-        d.set_backlight(0);
+        &mut d
+            .lock()
+            .map_err(|_| panic!("Could not lock access to display."))
+            .unwrap()
+            .set_color(0, 0, 0);
+        std::process::exit(1);
     }).expect("Error setting Ctrl-C handler");
     loop {
-        display_ferris(&mut display)?;
+        display_ferris(
+            &mut display
+                .lock()
+                .map_err(|_| panic!("Could not lock access to display."))
+                .unwrap(),
+        )?;
         std::thread::sleep(std::time::Duration::from_secs(4));
-        display_status(&mut display)?;
+        display_status(
+            &mut display
+                .lock()
+                .map_err(|_| panic!("Could not lock access to display."))
+                .unwrap(),
+        )?;
     }
 }
 
