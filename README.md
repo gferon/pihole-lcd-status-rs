@@ -16,4 +16,4 @@ There is currently two small programs:
 
 ## Preview
 
-![LCD display](img.jpg)
+![LCD display](https://github.com/gferon/rustberrypi-playground/raw/master/lcd.jpg)
