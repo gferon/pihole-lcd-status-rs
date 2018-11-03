@@ -3,8 +3,6 @@ build:
 
 deploy: build
 	ssh pi "systemctl stop pihole-lcd-status"
-	scp -C ../target/armv7-unknown-linux-gnueabihf/release/pihole-lcd-status pi:.
-	scp -C dist/pihole-lcd-status.service pi:.config/system.d/
-
-run: deploy
+	scp -qC ../target/armv7-unknown-linux-gnueabihf/release/pihole-lcd-status pi:.
+	scp -qC dist/pihole-lcd-status.service pi:.config/system.d/
 	ssh pi "systemctl start pihole-lcd-status"
