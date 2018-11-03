@@ -3,7 +3,7 @@ name = "pihole-lcd-status"
 version = "0.1.0"
 authors = ["Gabriel Feron <feron.gabriel@gmail.com>"]
 edition = "2018"
-license = "MIT"
+license = "WTFPL"
 
 [dependencies]
 rustberrypi = { path = "../rustberrypi" }
