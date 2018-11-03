@@ -1,0 +1,14 @@
+[package]
+name = "pihole-lcd-status"
+version = "0.1.0"
+authors = ["Gabriel Feron <feron.gabriel@gmail.com>"]
+edition = "2018"
+license = "MIT"
+
+[dependencies]
+rustberrypi = { path = "../rustberrypi" }
+ctrlc = "3.1"
+ureq = { version = "*", default-features = false }
+serde = "1"
+serde_derive = "1"
+serde_json = "1"

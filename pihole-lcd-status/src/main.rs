@@ -1,11 +1,13 @@
-use adafruit::errors::CommunicationError;
+use rustberrypi::errors::CommunicationError;
+use rustberrypi::i2c::lcd::AdafruitDisplay;
+use rustberrypi::i2c::lcd;
 use std::char;
 use std::sync::{Arc, Mutex};
 use serde_derive::Deserialize;
 use ureq;
 
-fn display_ferris(display: &mut adafruit::AdafruitDisplay) -> Result<(), CommunicationError> {
-    adafruit::helpers::load_ferris(display)?;
+fn display_ferris(display: &mut AdafruitDisplay) -> Result<(), CommunicationError> {
+    lcd::helpers::load_ferris(display)?;
 
     display.clear()?;
     display.home()?;
@@ -39,9 +41,8 @@ fn get_pihole_status() -> Result<PiHoleStatus, PiHoleError> {
     Ok(status)
 }
 
-fn display_status(display: &mut adafruit::AdafruitDisplay) -> Result<(), PiHoleError> {
+fn display_status(display: &mut AdafruitDisplay) -> Result<(), PiHoleError> {
     let status: PiHoleStatus = get_pihole_status()?;
-    std::thread::sleep(std::time::Duration::from_secs(10));
 
     display.clear()?;
     display.message(&format!(
@@ -57,11 +58,13 @@ fn display_status(display: &mut adafruit::AdafruitDisplay) -> Result<(), PiHoleE
         status.ads_blocked_today, status.ads_percentage_today,
     ))?;
 
+    std::thread::sleep(std::time::Duration::from_secs(10));
+
     Ok(())
 }
 
 fn main() -> Result<(), PiHoleError> {
-    let display = Arc::new(Mutex::new(adafruit::AdafruitDisplay::for_backplate()?));
+    let display = Arc::new(Mutex::new(AdafruitDisplay::for_backplate()?));
     let d = display.clone();
     ctrlc::set_handler(move || {
         &mut d
@@ -78,7 +81,7 @@ fn main() -> Result<(), PiHoleError> {
                 .map_err(|_| panic!("Could not lock access to display."))
                 .unwrap(),
         )?;
-        std::thread::sleep(std::time::Duration::from_secs(4));
+        std::thread::sleep(std::time::Duration::from_secs(10));
         display_status(
             &mut display
                 .lock()
@@ -104,7 +107,7 @@ struct PiHoleStatus {
 pub enum PiHoleError {
     HttpError(std::io::Error),
     DataError(serde_json::Error),
-    DeviceError(adafruit::errors::CommunicationError),
+    DeviceError(CommunicationError),
 }
 
 impl From<serde_json::Error> for PiHoleError {
@@ -113,8 +116,8 @@ impl From<serde_json::Error> for PiHoleError {
     }
 }
 
-impl From<adafruit::CommunicationError> for PiHoleError {
-    fn from(err: adafruit::CommunicationError) -> PiHoleError {
+impl From<rustberrypi::CommunicationError> for PiHoleError {
+    fn from(err: CommunicationError) -> PiHoleError {
         PiHoleError::DeviceError(err)
     }
 }
