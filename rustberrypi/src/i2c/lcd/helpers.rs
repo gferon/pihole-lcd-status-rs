@@ -1,6 +1,6 @@
 use bmp;
 use crate::errors::CommunicationError;
-use crate::AdafruitDisplay;
+use crate::i2c::lcd::AdafruitDisplay;
 
 use std::path::PathBuf;
 use std::{thread, time};
@@ -18,7 +18,6 @@ pub fn load_characters_from_bmp(
     for y in 0..16 {
         for x in 0..16 {
             let char_x = x % 5;
-            let char_y = y / 8 as u32;
             let char_idx = (x / 5) + 4 * (y / 8);
 
             let pixel = img.get_pixel(x as u32, y as u32);

@@ -1,0 +1,9 @@
+[package]
+name = "rustberrypi"
+version = "0.1.0"
+authors = ["Gabriel Feron <feron.gabriel@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+rppal = "*"
+bmp = { version = "*" }
