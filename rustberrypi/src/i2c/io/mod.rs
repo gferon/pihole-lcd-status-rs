@@ -1,5 +1,4 @@
 use rppal::gpio::Mode;
-use rppal::i2c;
 use rppal::i2c::I2c;
 
 use crate::errors::CommunicationError;
@@ -12,7 +11,6 @@ pub struct MCP230xx {
     gpio: Vec<u8>,
 }
 
-const NUM_GPIO: u8 = 16;
 const IODIR: u8 = 0x00;
 const GPIO: u8 = 0x12;
 const GPPU: u8 = 0x0C;

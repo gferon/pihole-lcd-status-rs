@@ -1,11 +1,9 @@
-pub mod errors;
-mod gpio;
-pub mod helpers;
-
 use std::char;
 
-pub use crate::errors::CommunicationError;
-use crate::gpio::MCP230xx;
+pub mod helpers;
+
+use crate::errors::CommunicationError;
+use crate::i2c::io::MCP230xx;
 
 use rppal::gpio::Mode;
 
@@ -14,38 +12,38 @@ const LCD_CLEARDISPLAY: u8 = 0x01;
 const LCD_RETURNHOME: u8 = 0x02;
 const LCD_ENTRYMODESET: u8 = 0x04;
 const LCD_DISPLAYCONTROL: u8 = 0x08;
-const LCD_CURSORSHIFT: u8 = 0x10;
+const _LCD_CURSORSHIFT: u8 = 0x10;
 const LCD_FUNCTIONSET: u8 = 0x20;
 const LCD_SETCGRAMADDR: u8 = 0x40;
 const LCD_SETDDRAMADDR: u8 = 0x80;
 
 // Entry flags
-const LCD_ENTRYRIGHT: u8 = 0x00;
+const _LCD_ENTRYRIGHT: u8 = 0x00;
 const LCD_ENTRYLEFT: u8 = 0x02;
 const LCD_ENTRYSHIFTINCREMENT: u8 = 0x01;
 const LCD_ENTRYSHIFTDECREMENT: u8 = 0x00;
 
 // Control flags
 const LCD_DISPLAYON: u8 = 0x04;
-const LCD_DISPLAYOFF: u8 = 0x00;
-const LCD_CURSORON: u8 = 0x02;
+const _LCD_DISPLAYOFF: u8 = 0x00;
+const _LCD_CURSORON: u8 = 0x02;
 const LCD_CURSOROFF: u8 = 0x00;
 const LCD_BLINKON: u8 = 0x01;
 const LCD_BLINKOFF: u8 = 0x00;
 
 // Move flags
-const LCD_DISPLAYMOVE: u8 = 0x08;
-const LCD_CURSORMOVE: u8 = 0x00;
-const LCD_MOVERIGHT: u8 = 0x04;
-const LCD_MOVELEFT: u8 = 0x00;
+const _LCD_DISPLAYMOVE: u8 = 0x08;
+const _LCD_CURSORMOVE: u8 = 0x00;
+const _LCD_MOVERIGHT: u8 = 0x04;
+const _LCD_MOVELEFT: u8 = 0x00;
 
 // Function set flags
-const LCD_8BITMODE: u8 = 0x10;
+const _LCD_8BITMODE: u8 = 0x10;
 const LCD_4BITMODE: u8 = 0x00;
 const LCD_2LINE: u8 = 0x08;
 const LCD_1LINE: u8 = 0x00;
-const LCD_5x10DOTS: u8 = 0x04;
-const LCD_5x8DOTS: u8 = 0x00;
+const _LCD_5X10DOTS: u8 = 0x04;
+const LCD_5X8DOTS: u8 = 0x00;
 
 // Char LCD plate GPIO numbers.
 const LCD_PLATE_RS: u8 = 15;
@@ -58,7 +56,7 @@ const LCD_PLATE_D7: u8 = 9;
 const LCD_PLATE_RED: u8 = 6;
 const LCD_PLATE_GREEN: u8 = 7;
 const LCD_PLATE_BLUE: u8 = 8;
-const LCD_BACKPACK_LITE: u8 = 7;
+const _LCD_BACKPACK_LITE: u8 = 7;
 
 // Char LCD plate button names.
 const SELECT: u8 = 0;
@@ -74,9 +72,6 @@ pub struct AdafruitDisplay {
     d5: u8,
     d6: u8,
     d7: u8,
-    red: u8,
-    green: u8,
-    blue: u8,
     displaycontrol: u8,
     displayfunction: u8,
     displaymode: u8,
@@ -122,7 +117,6 @@ impl AdafruitDisplay {
         backlight: bool,
         invert_backlight_polarity: bool,
         gpio: MCP230xx,
-        initial_backlight: f32,
     ) -> Result<Self, CommunicationError> {
         let mut display = Self {
             rs: LCD_PLATE_RS,
@@ -131,11 +125,8 @@ impl AdafruitDisplay {
             d5: LCD_PLATE_D5,
             d6: LCD_PLATE_D6,
             d7: LCD_PLATE_D7,
-            red: LCD_PLATE_RED,
-            green: LCD_PLATE_GREEN,
-            blue: LCD_PLATE_BLUE,
             displaycontrol: LCD_DISPLAYON | LCD_CURSOROFF | LCD_BLINKOFF,
-            displayfunction: LCD_4BITMODE | LCD_1LINE | LCD_2LINE | LCD_5x8DOTS,
+            displayfunction: LCD_4BITMODE | LCD_1LINE | LCD_2LINE | LCD_5X8DOTS,
             displaymode: LCD_ENTRYLEFT | LCD_ENTRYSHIFTDECREMENT,
             backlight: backlight,
             gpio: gpio,
@@ -172,8 +163,7 @@ impl AdafruitDisplay {
         if display.backlight {
             // display.gpio.setup(LCD_BACKPACK_LITE, Mode::Output)?;
             // display.set_backlight(1);
-
-            display.set_color(255, 255, 255);
+            display.set_color(255, 255, 255)?;
         }
 
         Ok(display)
@@ -181,7 +171,7 @@ impl AdafruitDisplay {
 
     /// Initializes the driver for the "Adafruit i2c 16x2 RGB LCD Pi Plate"
     pub fn for_backplate() -> Result<Self, CommunicationError> {
-        AdafruitDisplay::new(16, 2, true, true, MCP230xx::for_mcp23017()?, 1.0)
+        AdafruitDisplay::new(16, 2, true, true, MCP230xx::for_mcp23017()?)
     }
 
     /// Write 8-bit value in character or data mode. Value should be an int

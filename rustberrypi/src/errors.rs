@@ -6,4 +6,6 @@ pub enum CommunicationError {
     BusError(i2c::Error),
     WrongPin(u8),
     BitmapError(bmp::BmpError),
+    ReadingError,
+    WritingError,
 }
