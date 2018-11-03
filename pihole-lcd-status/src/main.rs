@@ -1,10 +1,14 @@
 use rustberrypi::errors::CommunicationError;
 use rustberrypi::i2c::lcd::AdafruitDisplay;
 use rustberrypi::i2c::lcd;
-use std::char;
-use std::sync::{Arc, Mutex};
+use rustberrypi::i2c::lcd::Button;
+
 use serde_derive::Deserialize;
 use ureq;
+
+use std::char;
+use std::sync::{Arc, Mutex};
+use std::thread;
 
 fn display_ferris(display: &mut AdafruitDisplay) -> Result<(), CommunicationError> {
     lcd::helpers::load_ferris(display)?;
@@ -13,7 +17,7 @@ fn display_ferris(display: &mut AdafruitDisplay) -> Result<(), CommunicationErro
     display.home()?;
 
     display.message(&format!(
-        "{}{}{}{} Pi",
+        "{}{}{}{} Pi-hole",
         char::from_u32(0).unwrap(),
         char::from_u32(1).unwrap(),
         char::from_u32(2).unwrap(),
@@ -22,7 +26,7 @@ fn display_ferris(display: &mut AdafruitDisplay) -> Result<(), CommunicationErro
 
     display.set_cursor(0, 1)?;
     display.message(&format!(
-        "{}{}{}{} HOLE",
+        "{}{}{}{} Status",
         char::from_u32(4).unwrap(),
         char::from_u32(5).unwrap(),
         char::from_u32(6).unwrap(),
@@ -41,28 +45,6 @@ fn get_pihole_status() -> Result<PiHoleStatus, PiHoleError> {
     Ok(status)
 }
 
-fn display_status(display: &mut AdafruitDisplay) -> Result<(), PiHoleError> {
-    let status: PiHoleStatus = get_pihole_status()?;
-
-    display.clear()?;
-    display.message(&format!(
-        "DNS last 24h\n{} queries",
-        status.dns_queries_today
-    ))?;
-
-    std::thread::sleep(std::time::Duration::from_secs(10));
-
-    display.clear()?;
-    display.message(&format!(
-        "Blocked {} ads\n{:.1}% less junk",
-        status.ads_blocked_today, status.ads_percentage_today,
-    ))?;
-
-    std::thread::sleep(std::time::Duration::from_secs(10));
-
-    Ok(())
-}
-
 fn main() -> Result<(), PiHoleError> {
     let display = Arc::new(Mutex::new(AdafruitDisplay::for_backplate()?));
     let d = display.clone();
@@ -74,21 +56,66 @@ fn main() -> Result<(), PiHoleError> {
             .set_color(0, 0, 0);
         std::process::exit(1);
     }).expect("Error setting Ctrl-C handler");
-    loop {
+
+    let d1 = display.clone();
+    thread::spawn(move || loop {
+        let status: PiHoleStatus = get_pihole_status().unwrap();
         display_ferris(
-            &mut display
+            &mut d1
+                .clone()
                 .lock()
                 .map_err(|_| panic!("Could not lock access to display."))
                 .unwrap(),
-        )?;
+        ).unwrap();
+        std::thread::sleep(std::time::Duration::from_secs(3));
+
+        {
+            let display = &mut d1
+                .lock()
+                .map_err(|_| panic!("Could not lock access to display."))
+                .unwrap();
+            display.clear().unwrap();
+            display
+                .message(&format!(
+                    "DNS last 24h\n{} queries",
+                    status.dns_queries_today
+                )).unwrap();
+        }
+
         std::thread::sleep(std::time::Duration::from_secs(10));
-        display_status(
-            &mut display
+
+        {
+            let display = &mut d1
                 .lock()
                 .map_err(|_| panic!("Could not lock access to display."))
-                .unwrap(),
-        )?;
-    }
+                .unwrap();
+            display.clear().unwrap();
+            display
+                .message(&format!(
+                    "Blocked {} ads\n{:.1}% less junk",
+                    status.ads_blocked_today, status.ads_percentage_today,
+                )).unwrap();
+        }
+
+        std::thread::sleep(std::time::Duration::from_secs(10));
+    });
+
+    thread::spawn(move || loop {
+        {
+            let display = &mut display
+                .lock()
+                .map_err(|_| panic!("Could not lock access to display."))
+                .unwrap();
+            if display.is_pressed(Button::Select).unwrap() {
+                display.toggle_backlight().unwrap();
+            }
+        }
+
+        std::thread::sleep(std::time::Duration::from_millis(200));
+    }).join()
+    .unwrap();
+
+    Ok(())
 }
 
 #[derive(Deserialize, Debug)]

@@ -1,5 +1,5 @@
-use rppal::gpio::Mode;
 use rppal::i2c::I2c;
+use rppal::gpio::{ Mode, Level, PullUpDown };
 
 use crate::errors::CommunicationError;
 
@@ -83,6 +83,18 @@ impl MCP230xx {
         self.write_iodir()
     }
 
+    /// Turn on/off the pull-up resistor for the specified pin
+    pub fn pullup(&mut self, pin: u8, pullupdown: PullUpDown) -> Result<(), CommunicationError> {
+        self.validate_pin(pin)?;
+        let idx = (pin / 8) as usize;
+        match pullupdown {
+            PullUpDown::PullUp => self.gppu[idx] |= 1 << (pin % 8),
+            PullUpDown::PullDown => panic!("Unsupported"),
+            PullUpDown::Off => self.gppu[idx] &= !(1 << (pin % 8)),
+        }
+        self.write_gppu()
+    }
+
     /// Write the specified byte value to the IODIR registor.
     /// If no value specified the current buffered value will be written.
     fn write_iodir(&self) -> Result<(), CommunicationError> {
@@ -119,5 +131,28 @@ impl MCP230xx {
             self.gpio[idx] = val;
         }
         self.write_gpio()
+    }
+
+    /// Read multiple pins specified in the given list and return list of pin values
+    pub fn input_pins(&mut self, pins: &[u8]) -> Result<Vec<Level>, CommunicationError> {
+        pins.iter().map(|p| self.validate_pin(*p));
+        self.device
+            .block_read(GPIO, &mut self.gpio)
+            .map_err(|e| CommunicationError::BusError(e))?;
+
+        Ok(pins
+            .iter()
+            .map(|pin| {
+                if self.gpio[(pin / 8) as usize] & 1 << (pin % 8) > 0 {
+                    Level::High
+                } else {
+                    Level::Low
+                }
+            }).collect())
+    }
+
+    /// Read the specified pin and return its level
+    pub fn input(&mut self, pin: u8) -> Result<Level, CommunicationError> {
+        Ok(self.input_pins(&[pin])?[0])
     }
 }

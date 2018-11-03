@@ -5,7 +5,7 @@ pub mod helpers;
 use crate::errors::CommunicationError;
 use crate::i2c::io::MCP230xx;
 
-use rppal::gpio::Mode;
+use rppal::gpio::{ Mode, Level, PullUpDown };
 
 // Commands
 const LCD_CLEARDISPLAY: u8 = 0x01;
@@ -58,12 +58,14 @@ const LCD_PLATE_GREEN: u8 = 7;
 const LCD_PLATE_BLUE: u8 = 8;
 const _LCD_BACKPACK_LITE: u8 = 7;
 
-// Char LCD plate button names.
-const SELECT: u8 = 0;
-const RIGHT: u8 = 1;
-const DOWN: u8 = 2;
-const UP: u8 = 3;
-const LEFT: u8 = 4;
+#[derive(Clone)]
+pub enum Button {
+    Select = 0,
+    Right = 1,
+    Down = 2,
+    Up = 3,
+    Left = 4,
+}
 
 pub struct AdafruitDisplay {
     rs: u8,
@@ -136,9 +138,17 @@ impl AdafruitDisplay {
         };
         display.gpio.setup(LCD_PLATE_RW, Mode::Output)?;
         display.gpio.output(LCD_PLATE_RW, false)?;
-        for button in &[SELECT, RIGHT, DOWN, UP, LEFT] {
-            display.gpio.setup(*button, Mode::Input)?;
-            //display.gpio.pullup(button, PullUpDown::PullUp);
+        for button in &[
+            Button::Select,
+            Button::Right,
+            Button::Down,
+            Button::Up,
+            Button::Left,
+        ] {
+            display.gpio.setup((*button).clone() as u8, Mode::Input)?;
+            display
+                .gpio
+                .pullup((*button).clone() as u8, PullUpDown::PullUp)?;
         }
 
         // Setup all pins as OUTPUT
@@ -228,6 +238,16 @@ impl AdafruitDisplay {
                 if b == 255 { self.blpol } else { !self.blpol },
             ),
         ])
+    }
+
+    pub fn toggle_backlight(&mut self) -> Result<bool, CommunicationError> {
+        if self.backlight {
+            self.set_color(0, 0, 0)?;
+        } else {
+            self.set_color(255, 255, 255)?;
+        }
+        self.backlight = !self.backlight;
+        Ok(self.backlight)
     }
 
     /// Move the cursor back to its start point (upper-left corner).
@@ -321,5 +341,10 @@ impl AdafruitDisplay {
         self.write8(LCD_CLEARDISPLAY, false)?;
         helpers::delay_microseconds(3000); // 3000 microsecond sleep, clearing the display takes a long time
         Ok(())
+    }
+
+    /// return true if the provided button is pressed, false otherwise.
+    pub fn is_pressed(&mut self, button: Button) -> Result<bool, CommunicationError> {
+        Ok(self.gpio.input(button as u8)? == Level::Low)
     }
 }

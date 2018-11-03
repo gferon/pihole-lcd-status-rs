@@ -65,7 +65,6 @@ impl HT16K33 {
             panic!("LED must be between 0 and 127");
         }
         let pos: usize = led as usize / 8;
-        println!("{}", pos);
         let offset = led % 8;
         if value == 0 {
             self.buffer[pos] &= !(1 << offset)
