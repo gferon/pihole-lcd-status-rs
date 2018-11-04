@@ -58,6 +58,6 @@ fn main() -> Result<(), Error> {
 
         // display on LED display
         Font::from_u8(sensor_readings.temperature as u8, &mut device)?;
-        std::thread::sleep(std::time::Duration::from_secs(5));
+        std::thread::sleep(std::time::Duration::from_secs(20));
     }
 }
