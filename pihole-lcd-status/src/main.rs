@@ -1,6 +1,6 @@
 use rustberrypi::errors::CommunicationError;
-use rustberrypi::i2c::lcd::AdafruitDisplay;
 use rustberrypi::i2c::lcd;
+use rustberrypi::i2c::lcd::AdafruitDisplay;
 use rustberrypi::i2c::lcd::Button;
 
 use serde_derive::Deserialize;
@@ -59,7 +59,9 @@ fn main() -> Result<(), PiHoleError> {
 
     let d1 = display.clone();
     thread::spawn(move || loop {
-        let status: PiHoleStatus = get_pihole_status().unwrap();
+        let status: PiHoleStatus = get_pihole_status()
+            .map_err(|_| println!("Could not fetch stats for PiHole, will retry."))
+            .unwrap();
         display_ferris(
             &mut d1
                 .clone()
