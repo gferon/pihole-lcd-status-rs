@@ -1,0 +1,11 @@
+[Unit]
+After=network.target docker.target
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+ExecStart=/home/pi/winterr
+
+[Install]
+WantedBy=multi-user.target
