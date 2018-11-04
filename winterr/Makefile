@@ -7,8 +7,8 @@ setup:
 	ssh -q pizero systemctl --user daemon-reload
 
 deploy: build
-	ssh -q pizero "systemctl --user stop winterr"
+	ssh pizero "systemctl --user stop winterr && rm winterr"
 	scp -C ../target/arm-unknown-linux-gnueabihf/release/winterr pizero:.
 
 run: deploy
-	ssh -q pizero "systemctl --user start winterr"
+	ssh -q pizero "systemctl --user start winterr && journalctl --user -b -f -u winterr"
