@@ -11,6 +11,11 @@ use log::error;
 struct Font;
 impl Font {
     pub fn from_u8(value: u8, device: &mut BicolorMatrix8x8) -> Result<(), CommunicationError> {
+        let color = match value {
+            0...19 => Color::Green,
+            19...23 => Color::Yellow,
+            _ => Color::Red,
+        };
         for (offset, c) in value.to_string().chars().enumerate() {
             for (i, px) in Font::get_char(c).iter().enumerate() {
                 let x = (i % 3) + (offset * 3) + offset;
@@ -18,7 +23,8 @@ impl Font {
                 device.set_pixel(
                     x as u8,
                     y as u8,
-                    if *px == 1 { Color::Green } else { Color::Off },
+                    if *px == 1 { color.clone() } else { Color::Off },
+                    false,
                 )?;
             }
         }
@@ -45,6 +51,7 @@ impl Font {
 fn main() -> Result<(), Error> {
     env_logger::init();
     let mut device = BicolorMatrix8x8::new()?;
+    device.set_brightness(2)?;
     loop {
         let sensor_readings = AM2320::read()?;
 
