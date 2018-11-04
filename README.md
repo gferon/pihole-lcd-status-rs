@@ -12,7 +12,7 @@ I am reimplementing basic drivers for things such as:
 
 There is currently two small programs:
 * `pihole-lcd-status` that will show statistics pulled from the PiHole API running on the same RaspberryPi
-* `winterr` currently only displays the temperature on a 8x8 LED matrix
+* `winterr` displays the temperature on a 8x8 LED matrix and sends readings to InfluxDB
 
 ## Preview
 
