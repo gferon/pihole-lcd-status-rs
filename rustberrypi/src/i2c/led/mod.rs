@@ -1,4 +1,6 @@
+use bmp::{self, Pixel};
 use rppal::i2c::I2c;
+use std::path::PathBuf;
 
 use crate::errors::CommunicationError;
 
@@ -92,6 +94,21 @@ pub enum Color {
     Yellow = 0x03,
 }
 
+impl From<Pixel> for Color {
+    fn from(pixel: Pixel) -> Self {
+        match pixel {
+            Pixel { r: 255, g: 0, b: 0 } => Color::Red,
+            Pixel {
+                r: 255,
+                g: 255,
+                b: 0,
+            } => Color::Yellow,
+            Pixel { r: 0, g: 255, b: 0 } => Color::Green,
+            _ => Color::Off,
+        }
+    }
+}
+
 pub struct BicolorMatrix8x8 {
     controller: HT16K33,
 }
@@ -104,11 +121,28 @@ impl BicolorMatrix8x8 {
     }
 
     pub fn set_pixel(&mut self, x: u8, y: u8, color: Color) -> Result<(), CommunicationError> {
-        self.controller
-            .set_led(y * 16 + x, if color == Color::Green { 1 } else { 0 })?;
-        self.controller
-            .set_led(y * 16 + x + 8, if color == Color::Red { 1 } else { 0 })?;
+        let (led1, led2) = match color {
+            Color::Green => (1, 0),
+            Color::Red => (0, 1),
+            Color::Yellow => (1, 1),
+            Color::Off => (0, 0),
+        };
+        self.controller.set_led(y * 16 + x, led1)?;
+        self.controller.set_led(y * 16 + x + 8, led2)?;
         Ok(())
+    }
+
+    pub fn set_image(&mut self, filepath: PathBuf) -> Result<(), CommunicationError> {
+        let img = bmp::open(filepath).map_err(|e| CommunicationError::BitmapError(e))?;
+        if img.get_height() != 8 || img.get_width() != 8 {
+            panic!("You need to provide a 8x8 BMP sprite");
+        }
+
+        for (x, y) in img.coordinates() {
+            self.set_pixel(x as u8, y as u8, img.get_pixel(x, y).into())?;
+        }
+
+        self.write_display()
     }
 
     pub fn write_display(&mut self) -> Result<(), CommunicationError> {
