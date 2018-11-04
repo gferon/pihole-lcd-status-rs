@@ -62,7 +62,7 @@ impl HT16K33 {
         Ok(())
     }
 
-    pub fn set_led(&mut self, led: u8, value: u8) -> Result<(), CommunicationError> {
+    pub fn set_led(&mut self, led: u8, value: u8, update: bool) -> Result<(), CommunicationError> {
         if led > 127 {
             panic!("LED must be between 0 and 127");
         }
@@ -72,6 +72,11 @@ impl HT16K33 {
             self.buffer[pos] &= !(1 << offset)
         } else {
             self.buffer[pos] |= 1 << offset
+        }
+        if update {
+            self.device
+                .block_write(pos as u8, &[self.buffer[pos]])
+                .map_err(|e| CommunicationError::BusError(e))?;
         }
         Ok(())
     }
@@ -86,7 +91,7 @@ impl HT16K33 {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 pub enum Color {
     Off = 0x00,
     Green = 0x01,
@@ -120,15 +125,21 @@ impl BicolorMatrix8x8 {
         })
     }
 
-    pub fn set_pixel(&mut self, x: u8, y: u8, color: Color) -> Result<(), CommunicationError> {
+    pub fn set_pixel(
+        &mut self,
+        x: u8,
+        y: u8,
+        color: Color,
+        update: bool,
+    ) -> Result<(), CommunicationError> {
         let (led1, led2) = match color {
             Color::Green => (1, 0),
             Color::Red => (0, 1),
             Color::Yellow => (1, 1),
             Color::Off => (0, 0),
         };
-        self.controller.set_led(y * 16 + x, led1)?;
-        self.controller.set_led(y * 16 + x + 8, led2)?;
+        self.controller.set_led(y * 16 + x, led1, update)?;
+        self.controller.set_led(y * 16 + x + 8, led2, update)?;
         Ok(())
     }
 
@@ -139,10 +150,14 @@ impl BicolorMatrix8x8 {
         }
 
         for (x, y) in img.coordinates() {
-            self.set_pixel(x as u8, y as u8, img.get_pixel(x, y).into())?;
+            self.set_pixel(x as u8, y as u8, img.get_pixel(x, y).into(), false)?;
         }
 
         self.write_display()
+    }
+
+    pub fn set_brightness(&mut self, brightness: u8) -> Result<(), CommunicationError> {
+        self.controller.set_brightness(brightness)
     }
 
     pub fn write_display(&mut self) -> Result<(), CommunicationError> {
