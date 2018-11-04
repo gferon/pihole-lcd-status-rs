@@ -1,10 +1,12 @@
 use rustberrypi::errors::CommunicationError;
-use rustberrypi::i2c::led::{ BicolorMatrix8x8, Color };
+use rustberrypi::i2c::led::{BicolorMatrix8x8, Color};
 use rustberrypi::i2c::temperature::AM2320;
 
-use influx_db_client::{Client, Point, Value, Precision};
+use influx_db_client::{Client, Point, Precision, Value};
 
+use env_logger;
 use failure::Error;
+use log::error;
 
 struct Font;
 impl Font {
@@ -41,6 +43,7 @@ impl Font {
 }
 
 fn main() -> Result<(), Error> {
+    env_logger::init();
     let mut device = BicolorMatrix8x8::new()?;
     loop {
         let sensor_readings = AM2320::read()?;
@@ -54,10 +57,17 @@ fn main() -> Result<(), Error> {
             .add_field("temperature", Value::Float(sensor_readings.temperature))
             .add_field("humidity", Value::Float(sensor_readings.humidity))
             .to_owned();
-        let _ = client.write_point(point, Some(Precision::Seconds), None)?;
+        let _ = client
+            .write_point(point, Some(Precision::Seconds), None)
+            .map_err(|e| error!("Could not send data to Grafana, will retry later. {}", e));
+
+        // blink one pixel to show the program is alive
+        device.set_pixel(7, 7, Color::Yellow, true)?;
+        std::thread::sleep(std::time::Duration::from_millis(200));
+        device.set_pixel(7, 7, Color::Off, true)?;
 
         // display on LED display
-        Font::from_u8(sensor_readings.temperature as u8, &mut device)?;
-        std::thread::sleep(std::time::Duration::from_secs(20));
+        Font::from_u8(sensor_readings.temperature.floor() as u8, &mut device)?;
+        std::thread::sleep(std::time::Duration::from_secs(10));
     }
 }
