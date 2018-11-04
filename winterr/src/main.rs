@@ -2,6 +2,10 @@ use rustberrypi::errors::CommunicationError;
 use rustberrypi::i2c::led::{ BicolorMatrix8x8, Color };
 use rustberrypi::i2c::temperature::AM2320;
 
+use influx_db_client::{Client, Point, Value, Precision};
+
+use failure::Error;
+
 struct Font;
 impl Font {
     pub fn from_u8(value: u8, device: &mut BicolorMatrix8x8) -> Result<(), CommunicationError> {
@@ -36,10 +40,23 @@ impl Font {
     }
 }
 
-fn main() -> Result<(), CommunicationError> {
+fn main() -> Result<(), Error> {
     let mut device = BicolorMatrix8x8::new()?;
     loop {
         let sensor_readings = AM2320::read()?;
+
+        let client = Client::new("http://192.168.188.20:8086", "home")
+            .set_authentication("winterr", "iscoming");
+
+        // prepare measurement
+        let point = Point::new("am2320")
+            .add_tag("tags", Value::String("bedroom".into()))
+            .add_field("temperature", Value::Float(sensor_readings.temperature))
+            .add_field("humidity", Value::Float(sensor_readings.humidity))
+            .to_owned();
+        let _ = client.write_point(point, Some(Precision::Seconds), None)?;
+
+        // display on LED display
         Font::from_u8(sensor_readings.temperature as u8, &mut device)?;
         std::thread::sleep(std::time::Duration::from_secs(5));
     }

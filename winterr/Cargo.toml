@@ -8,3 +8,4 @@ license = "WTFPL"
 [dependencies]
 rustberrypi = { path = "../rustberrypi" }
 failure = "0.1"
+influx_db_client = { git = "https://github.com/gferon/InfluxDBClient-rs" }
