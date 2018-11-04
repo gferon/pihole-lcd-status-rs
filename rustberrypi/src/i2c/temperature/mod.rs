@@ -5,8 +5,8 @@ use std::{thread, time};
 
 #[derive(Debug)]
 pub struct AM2320 {
-    pub temperature: f32,
-    pub humidity: f32,
+    pub temperature: f64,
+    pub humidity: f64,
 }
 
 impl AM2320 {
@@ -79,8 +79,8 @@ impl AM2320 {
         let humidity = Self::combine_bytes(data[2], data[3]);
 
         Ok(AM2320 {
-            temperature: temperature as f32 / 10.0,
-            humidity: humidity as f32 / 10.0,
+            temperature: temperature as f64 / 10.0,
+            humidity: humidity as f64 / 10.0,
         })
     }
 }
