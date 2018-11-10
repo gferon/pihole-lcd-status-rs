@@ -1,0 +1,9 @@
+[Unit]
+Description=Get weather data periodically
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+
+[Install]
+WantedBy=timers.target

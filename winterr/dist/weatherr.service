@@ -5,7 +5,7 @@ After=network.target docker.target
 Type=simple
 Restart=on-failure
 RestartSec=10
-ExecStart=/storage/pihole-lcd-status
+ExecStart=/home/pi/weatherr
 
 [Install]
 WantedBy=default.target

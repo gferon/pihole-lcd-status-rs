@@ -1,0 +1,9 @@
+[Unit]
+Description=Send local AM2320 sensor data periodically
+
+[Timer]
+OnCalendar=*:0/15
+Persistent=true
+
+[Install]
+WantedBy=timers.target
