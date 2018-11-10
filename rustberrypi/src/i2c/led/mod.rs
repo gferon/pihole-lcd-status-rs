@@ -48,7 +48,8 @@ impl HT16K33 {
             .block_write(
                 HT16K33_BLINK_CMD | HT16K33_BLINK_DISPLAYON | frequency as u8,
                 &[],
-            ).map_err(|e| CommunicationError::BusError(e))?;
+            )
+            .map_err(|e| CommunicationError::BusError(e))?;
         Ok(())
     }
 
@@ -79,6 +80,13 @@ impl HT16K33 {
                 .map_err(|e| CommunicationError::BusError(e))?;
         }
         Ok(())
+    }
+
+    pub fn clear(&mut self) -> Result<(), CommunicationError> {
+        for i in 0..127 {
+            self.set_led(i, 0, false)?;
+        }
+        self.write_display()
     }
 
     pub fn write_display(&self) -> Result<(), CommunicationError> {
@@ -158,6 +166,10 @@ impl BicolorMatrix8x8 {
 
     pub fn set_brightness(&mut self, brightness: u8) -> Result<(), CommunicationError> {
         self.controller.set_brightness(brightness)
+    }
+
+    pub fn clear(&mut self) -> Result<(), CommunicationError> {
+        self.controller.clear()
     }
 
     pub fn write_display(&mut self) -> Result<(), CommunicationError> {
