@@ -1,0 +1,18 @@
+#!/bin/bash -e
+
+deploy() {
+    host=$1
+    ssh ${host} "mkdir -p .config/systemd/user"
+    rsync -az dist/ ${host}:.config/systemd/user/
+    ssh -q ${host} "\
+		systemctl --user daemon-reload && \
+		systemctl --user start --now weatherr.service winterr.service weatherr.timer winterr.timer && \
+        systemctl --user status weatherr.service winterr.service weatherr.timer winterr.timer && \
+		systemctl --user list-timers \
+	"
+
+    rsync -z ../target/arm-unknown-linux-gnueabihf/release/*rr ${host}:.
+}
+
+cargo +nightly build --target=arm-unknown-linux-gnueabihf --release
+deploy $1

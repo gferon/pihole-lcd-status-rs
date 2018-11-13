@@ -1,11 +1,7 @@
-[Unit]
-After=network.target docker.target
-
 [Service]
-Type=simple
-Restart=on-failure
-RestartSec=10
-ExecStart=/home/pi/winterr
+Type=oneshot
+EnvironmentFile=%h/%N.env
+ExecStart=%h/%N --host ${HOST} --db ${DB} --tag ${TAG} sensor
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target

@@ -1,14 +1,19 @@
 build:
-	cargo build --target=arm-unknown-linux-gnueabihf --release
+	cargo +nightly build --target=arm-unknown-linux-gnueabihf --release
 
-setup:
-	ssh -q pizero mkdir -p .config/systemd/user
-	scp -qC dist/winterr.service pizero:.config/systemd/user/winterr.service
-	ssh -q pizero systemctl --user daemon-reload
+setup: build
+	rsync -az dist/ pi0:.config/systemd/user/
+	rsync -az dist/ pi1:.config/systemd/user/
+	ssh -q pi0 "\
+		systemctl --user daemon-reload && \
+		systemctl --user enable weatherr.service winterr.service weatherr.timer winterr.timer && \
+		systemctl --user start weatherr.timer winterr.timer && \
+		systemctl --user list-timers \
+	"
 
-deploy: build
-	ssh pizero "systemctl --user stop winterr && rm winterr"
-	scp -C ../target/arm-unknown-linux-gnueabihf/release/winterr pizero:.
+deploy: setup
+	rsync -z ../target/arm-unknown-linux-gnueabihf/release/*rr pi0:.
+	rsync -z ../target/arm-unknown-linux-gnueabihf/release/*rr pi1:.
 
 run: deploy
-	ssh -q pizero "systemctl --user start winterr && journalctl --user -b -f -u winterr"
+	ssh -q pi0 "systemctl --user start winterr"
