@@ -1,5 +1,5 @@
+use rppal::gpio::{Level, Mode, PullUpDown};
 use rppal::i2c::I2c;
-use rppal::gpio::{ Mode, Level, PullUpDown };
 
 use crate::errors::CommunicationError;
 
@@ -135,7 +135,7 @@ impl MCP230xx {
 
     /// Read multiple pins specified in the given list and return list of pin values
     pub fn input_pins(&mut self, pins: &[u8]) -> Result<Vec<Level>, CommunicationError> {
-        pins.iter().map(|p| self.validate_pin(*p));
+        let _ = pins.iter().map(|p| self.validate_pin(*p));
         self.device
             .block_read(GPIO, &mut self.gpio)
             .map_err(|e| CommunicationError::BusError(e))?;
@@ -148,7 +148,8 @@ impl MCP230xx {
                 } else {
                     Level::Low
                 }
-            }).collect())
+            })
+            .collect())
     }
 
     /// Read the specified pin and return its level
