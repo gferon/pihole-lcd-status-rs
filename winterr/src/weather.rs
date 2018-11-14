@@ -24,7 +24,6 @@ fn get_current_weather(url: hyper::Uri) -> impl Future<Item = Weather, Error = F
 pub fn send_current_weather(
     client: Client,
     measurement: String,
-    tag: String,
     api_key: String,
 ) -> Result<(), Error> {
     // get weather from OpenWeather API
@@ -39,7 +38,7 @@ pub fn send_current_weather(
         .map(move |weather| {
             println!("Got weather info: {:?}", weather);
             let point = Point::new(&measurement)
-                .add_tag("tags", Value::String(tag))
+                .add_tag("tags", Value::String("weather"))
                 .add_field("temperature", Value::Float(weather.temperature()))
                 .add_field("humidity", Value::Float(weather.humidity))
                 .to_owned();

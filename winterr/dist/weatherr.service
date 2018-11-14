@@ -1,7 +1,6 @@
 [Service]
 Type=oneshot
 EnvironmentFile=%h/winterr.env
-ExecStart=%h/winterr --host ${HOST} --db ${DB} --tag ${TAG} weather --api-key $OWM_API_KEY
-
+ExecStart=%h/winterr --host ${HOST} --db ${DB} weather --api-key ${OWM_API_KEY}
 [Install]
 WantedBy=default.target

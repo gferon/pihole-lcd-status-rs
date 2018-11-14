@@ -1,11 +1,10 @@
-use rustberrypi::i2c::temperature::AM2320;
-
 use failure::Error;
-use influx_db_client::{Client, Point, Precision, Value};
+use influx_db_client::Client;
 use structopt::StructOpt;
 use url::Url;
 
 mod errors;
+mod sensor;
 mod weather;
 
 #[derive(StructOpt, Debug)]
@@ -36,7 +35,7 @@ enum Command {
     Sensor,
     #[structopt(name = "weather")]
     Weather {
-        #[structopt(short = "k", long = "key")]
+        #[structopt(short = "k", long = "api-key")]
         // Your OpenWeatherMap API key
         api_key: String,
     },
@@ -51,33 +50,16 @@ fn get_client(host: &Url, db: &str) -> Client {
     }
 }
 
-fn send_sensor_data(client: Client, measurement: &str, tag: String) -> Result<(), Error> {
-    // prepare measurement
-    let sensor_readings = AM2320::read()?;
-    let point = Point::new(measurement)
-        .add_tag("tags", Value::String(tag))
-        .add_field("temperature", Value::Float(sensor_readings.temperature))
-        .add_field("humidity", Value::Float(sensor_readings.humidity))
-        .to_owned();
-    let _ = client.write_point(point, Some(Precision::Seconds), None)?;
-    println!("Sent {:?} to Grafana!", sensor_readings);
-
-    Ok(())
-}
-
 fn main() -> Result<(), Error> {
     env_logger::init();
     let opt = Opt::from_args();
 
     match opt.command {
         Command::Sensor => {
-            send_sensor_data(get_client(&opt.host, &opt.db), &opt.measurement, opt.tag)
+            sensor::send_sensor_data(get_client(&opt.host, &opt.db), &opt.measurement, opt.tag)
         }
-        Command::Weather { api_key } => weather::send_current_weather(
-            get_client(&opt.host, &opt.db),
-            opt.measurement,
-            opt.tag,
-            api_key,
-        ),
+        Command::Weather { api_key } => {
+            weather::send_current_weather(get_client(&opt.host, &opt.db), opt.measurement, api_key)
+        }
     }
 }
